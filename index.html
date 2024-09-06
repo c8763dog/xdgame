@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Basic 2D Platform (No JavaScript)</title>
+    <title>2D Platform Game with JavaScript</title>
     <style>
         body {
             margin: 0;
@@ -16,15 +16,16 @@
             overflow: hidden;
             background-color: #87CEEB; /* 蓝天背景 */
         }
-        .platform {
+        .platform, .player, .enemy {
             position: absolute;
+        }
+        .platform {
             bottom: 0;
             width: 100%;
             height: 100px;
             background-color: #654321; /* 棕色平台 */
         }
         .player {
-            position: absolute;
             width: 50px;
             height: 50px;
             bottom: 100px; /* 玩家位于平台之上 */
@@ -32,25 +33,11 @@
             background-color: #00FF00; /* 绿色玩家 */
         }
         .enemy {
-            position: absolute;
             width: 50px;
             height: 50px;
             bottom: 100px; /* 敌人位于平台之上 */
             left: 300px;
             background-color: #FFFFFF; /* 白色敌人 */
-            animation: moveEnemy 2s infinite linear;
-        }
-        /* 动画: 敌人在屏幕中来回移动 */
-        @keyframes moveEnemy {
-            0% {
-                left: 300px;
-            }
-            50% {
-                left: 600px;
-            }
-            100% {
-                left: 300px;
-            }
         }
     </style>
 </head>
@@ -61,6 +48,67 @@
         <div class="enemy"></div>
         <div class="platform"></div>
     </div>
+
+    <script>
+        const player = document.querySelector('.player');
+        const enemy = document.querySelector('.enemy');
+
+        let playerPositionX = 100; // 玩家初始位置
+        const playerSpeed = 5; // 玩家移动速度
+        let isMovingLeft = false;
+        let isMovingRight = false;
+
+        let enemyPositionX = 300; // 敌人初始位置
+        const enemySpeed = 2; // 敌人移动速度
+        let enemyDirection = 1; // 敌人移动方向，1为向右，-1为向左
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'A') {
+                isMovingLeft = true;
+            } else if (e.key === 'd' || e.key === 'D') {
+                isMovingRight = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'a' || e.key === 'A') {
+                isMovingLeft = false;
+            } else if (e.key === 'd' || e.key === 'D') {
+                isMovingRight = false;
+            }
+        });
+
+        // 更新玩家位置
+        function updatePlayer() {
+            if (isMovingLeft && playerPositionX > 0) {
+                playerPositionX -= playerSpeed;
+            }
+            if (isMovingRight && playerPositionX < window.innerWidth - 50) {
+                playerPositionX += playerSpeed;
+            }
+            player.style.left = playerPositionX + 'px';
+        }
+
+        // 更新敌人位置
+        function updateEnemy() {
+            enemyPositionX += enemySpeed * enemyDirection;
+            if (enemyPositionX <= 0 || enemyPositionX >= window.innerWidth - 50) {
+                enemyDirection *= -1; // 碰到屏幕边缘时反转方向
+            }
+            enemy.style.left = enemyPositionX + 'px';
+        }
+
+        // 游戏循环
+        function gameLoop() {
+            updatePlayer();
+            updateEnemy();
+            requestAnimationFrame(gameLoop); // 循环调用游戏帧
+        }
+
+        // 开始游戏循环
+        gameLoop();
+    </script>
 
 </body>
 </html>
