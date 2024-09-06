@@ -62,22 +62,22 @@ function loadImages() {
     ['move_0.png', 'move_1.png', 'move_2.png'].forEach(src => {
         const img = new Image();
         img.src = `/assets/${src}`;
-        monsterImages.move.push(img);
+        img.onload = () => monsterImages.move.push(img); // 确保图像加载完毕
     });
     ['stand_0.png', 'stand_1.png', 'stand_2.png'].forEach(src => {
         const img = new Image();
         img.src = `/assets/${src}`;
-        monsterImages.stand.push(img);
+        img.onload = () => monsterImages.stand.push(img); // 确保图像加载完毕
     });
     ['hit1_0.png'].forEach(src => {
         const img = new Image();
         img.src = `/assets/${src}`;
-        monsterImages.hit.push(img);
+        img.onload = () => monsterImages.hit.push(img); // 确保图像加载完毕
     });
     ['die1_0.png', 'die1_1.png', 'die1_2.png'].forEach(src => {
         const img = new Image();
         img.src = `/assets/${src}`;
-        monsterImages.die.push(img);
+        img.onload = () => monsterImages.die.push(img); // 确保图像加载完毕
     });
 }
 
@@ -96,7 +96,9 @@ function gameLoop() {
 
 // 绘制背景
 function drawBackground() {
-    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+    if (background.complete) { // 确保背景图像加载完毕
+        ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+    }
 }
 
 // 绘制玩家
@@ -249,7 +251,7 @@ function createMonster() {
         elapsedTime: 0,
         dead: false,
         deathTime: 0,
-        vx: Math.random() > 0.5 ? 2 : -2, // 随机初始方向
+        vx: Math.random() > 0.5 ? 2 : -2, // 随机初始速度
         health: 100
     };
     monsters.push(monster);
@@ -312,6 +314,7 @@ function init() {
     canvas.height = 877;
     loadImages();
     gameLoop();
+    backgroundMusic.play();
 }
 
 init();
