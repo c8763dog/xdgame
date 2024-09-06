@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Platform Game with Red Square and Exp Bar</title>
+    <title>2D Platform Game with Level Up Button and Time Log</title>
     <style>
         body {
             margin: 0;
-            background-color: #000; /* 初始背景颜色 */
+            background-color: #87CEEB;
+            transition: background-color 5s ease;
         }
         .game-container {
             position: relative;
@@ -22,7 +23,7 @@
             bottom: 0;
             width: 100%;
             height: 100px;
-            background-color: #654321; /* 棕色平台 */
+            background-color: #654321;
         }
         .roof {
             width: 100px;
@@ -42,7 +43,7 @@
             height: 50px;
             bottom: 100px;
             left: 100px;
-            background-color: #00FF00; /* 绿色玩家 */
+            background-color: #00FF00;
         }
         .enemy {
             width: 50px;
@@ -56,7 +57,7 @@
         .bullet {
             width: 20px;
             height: 20px;
-            background-color: #FFA500; /* 橘色子弹 */
+            background-color: #FFA500;
         }
         .item {
             width: 30px;
@@ -67,7 +68,7 @@
             animation: float 2s ease-in-out infinite;
         }
         .spawned-item {
-            background-color: #FF0000; /* 黑底红色方块 */
+            background-color: #FF0000;
             width: 40px;
             height: 40px;
         }
@@ -94,7 +95,7 @@
         .exp-fill {
             width: 0;
             height: 100%;
-            background-color: #00FF00; /* 经验条填充颜色 */
+            background-color: #00FF00;
         }
         .level {
             position: absolute;
@@ -103,6 +104,29 @@
             transform: translateX(-50%);
             font-size: 20px;
             color: white;
+        }
+        /* 新增的測試按鈕和日志區域 */
+        .test-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .log-container {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            width: 300px;
+            height: 200px;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            font-family: Arial, sans-serif;
         }
     </style>
 </head>
@@ -117,6 +141,15 @@
             <div class="exp-fill"></div>
         </div>
         <div class="level">Level: 1 (0%)</div>
+
+        <!-- 測試按鈕 -->
+        <button class="test-button" id="testButton">Level Up</button>
+
+        <!-- 日志容器 -->
+        <div class="log-container" id="logContainer">
+            <h3>Level Up Log</h3>
+            <ul id="logList"></ul>
+        </div>
     </div>
 
     <script>
@@ -124,6 +157,9 @@
         const expFill = document.querySelector('.exp-fill');
         const levelText = document.querySelector('.level');
         const gameContainer = document.querySelector('.game-container');
+        const testButton = document.getElementById('testButton');
+        const logContainer = document.getElementById('logContainer');
+        const logList = document.getElementById('logList');
     
         let playerPositionX = 100;
         let playerPositionY = window.innerHeight - 150;
@@ -143,15 +179,14 @@
         let expMultiplier = 1;
     
         let enemies = [];
-        let enemySpeed = 10;
-        const enemyFallSpeed = 5;
-        let spawnInterval = 1000; // 每秒生成一个敌人
+        let enemySpeed = 2;
+        const maxEnemyBounces = 2;
+        let spawnInterval = 1000;
     
         const items = [];
         const itemFallSpeed = 2;
     
-        // Background color gradients for each level
-        const backgroundColors = ['#87CEEB', '#FFA07A', '#FF4500', '#FFD700', '#32CD32'];
+        const backgroundColors = ['#87CEEB', '#80D0F0', '#78C2E6', '#70B5DC', '#68A8D2'];
     
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
@@ -164,8 +199,6 @@
                     isJumping = true;
                     verticalVelocity = -jumpSpeed;
                 }
-            } else if (e.key === 'z' || e.key === 'Z') {
-                pickUpItem(); // Player picks up item when pressing 'Z'
             }
         });
     
@@ -204,13 +237,13 @@
             player.style.left = playerPositionX + 'px';
             player.style.top = playerPositionY + 'px';
         }
-    
+
         // Shoot a bullet
         function shootBullet(mouseX, mouseY) {
             const bullet = document.createElement('div');
             bullet.classList.add('bullet');
             bullet.style.left = playerPositionX + 'px';
-            bullet.style.bottom = '150px'; // Bullet appears above the player
+            bullet.style.bottom = '150px';
             gameContainer.appendChild(bullet);
     
             const angle = Math.atan2(mouseY - playerPositionY, mouseX - playerPositionX);
@@ -222,42 +255,80 @@
                 positionY: playerPositionY,
                 velocityX: Math.cos(angle) * bulletSpeed,
                 velocityY: Math.sin(angle) * bulletSpeed,
-                bounces: 0 // Track bullet bounces
+                bounces: 0
             });
         }
     
-        // Listen for mouse click to shoot bullets
         document.addEventListener('click', (e) => {
             const mouseX = e.clientX;
             const mouseY = e.clientY;
             shootBullet(mouseX, mouseY);
         });
     
+        // Update bullets
+        function updateBullets() {
+            bullets.forEach((bullet, bulletIndex) => {
+                bullet.positionX += bullet.velocityX;
+                bullet.positionY += bullet.velocityY;
+                bullet.element.style.left = bullet.positionX + 'px';
+                bullet.element.style.top = bullet.positionY + 'px';
+    
+                if (
+                    bullet.positionX < 0 ||
+                    bullet.positionX > window.innerWidth ||
+                    bullet.positionY < 0 ||
+                    bullet.positionY > window.innerHeight
+                ) {
+                    bullet.element.remove();
+                    bullets.splice(bulletIndex, 1);
+                }
+    
+                if (bullet.bounces < 2) {
+                    if (bullet.positionX <= 0 || bullet.positionX >= window.innerWidth - 20) {
+                        bullet.velocityX *= -1;
+                        bullet.bounces += 1;
+                    }
+                    if (bullet.positionY <= 0 || bullet.positionY >= window.innerHeight - 20) {
+                        bullet.velocityY *= -1;
+                        bullet.bounces += 1;
+                    }
+                }
+            });
+        }
+    
         // Create new enemy
         function createEnemy() {
             const enemy = document.createElement('div');
             enemy.classList.add('enemy');
             enemy.style.left = Math.random() * (window.innerWidth - 50) + 'px';
-            enemy.style.top = '0px'; // Start from the top
+            enemy.style.top = '0px';
             gameContainer.appendChild(enemy);
     
             enemies.push({
                 element: enemy,
                 positionX: parseFloat(enemy.style.left),
                 positionY: parseFloat(enemy.style.top),
-                health: 30 // 敌人的生命值
+                velocityY: enemySpeed,
+                bounces: 0,
+                health: 30
             });
         }
     
         // Update enemies
         function updateEnemies() {
             enemies.forEach((enemy, enemyIndex) => {
-                enemy.positionY += enemyFallSpeed;
+                enemy.positionY += enemy.velocityY;
                 enemy.element.style.left = enemy.positionX + 'px';
                 enemy.element.style.top = enemy.positionY + 'px';
     
-                // Remove enemies that fall below the screen
-                if (enemy.positionY > window.innerHeight) {
+                if (enemy.positionY >= window.innerHeight - 150 && enemy.bounces < maxEnemyBounces) {
+                    enemy.velocityY *= -1;
+                    enemy.bounces += 1;
+                } else if (enemy.positionY <= 0) {
+                    enemy.velocityY *= -1;
+                }
+    
+                if (enemy.bounces >= maxEnemyBounces) {
                     enemy.element.remove();
                     enemies.splice(enemyIndex, 1);
                 }
@@ -274,88 +345,65 @@
                         bullet.positionY < enemy.positionY + 50 &&
                         bullet.positionY + 20 > enemy.positionY
                     ) {
-                        // Remove bullet
                         bullet.element.remove();
                         bullets.splice(bulletIndex, 1);
     
-                        // Reduce health of the enemy
                         enemy.health -= 10;
     
-                        // Check if enemy is dead
                         if (enemy.health <= 0) {
-                            // Remove enemy
                             enemy.element.remove();
                             enemies.splice(enemyIndex, 1);
-                            // Increase experience
-                            playerExp += 20; // 击败敌人后增加经验值
+                            playerExp += 20;
                         }
                     }
                 });
             });
         }
     
-        // Create red squares
-        function createRedSquare() {
-            const item = document.createElement('div');
-            item.classList.add('spawned-item');
-            item.style.left = Math.random() * (window.innerWidth - 40) + 'px';
-            item.style.top = '0px';
-            gameContainer.appendChild(item);
-    
-            items.push({
-                element: item,
-                positionX: parseFloat(item.style.left),
-                positionY: parseFloat(item.style.top),
-                health: 20 // 红色方块的生命值
-            });
-        }
-    
-        // Update items
-        function updateItems() {
-            items.forEach((item, itemIndex) => {
-                item.positionY += itemFallSpeed;
-                item.element.style.left = item.positionX + 'px';
-                item.element.style.top = item.positionY + 'px';
-    
-                // Remove items that fall below the screen
-                if (item.positionY > window.innerHeight) {
-                    item.element.remove();
-                    items.splice(itemIndex, 1);
-                }
-            });
-        }
-    
-        // Update experience bar
+        // Update experience bar and level
         function updateExpBar() {
             const expPercent = Math.min((playerExp / expPerLevel) * 100, 100);
             expFill.style.width = expPercent + '%';
             levelText.textContent = `Level: ${playerLevel} (${expPercent.toFixed(2)}%)`;
     
             if (playerExp >= expPerLevel) {
-                playerLevel++;
-                playerExp = 0;
-    
-                // Change background color on level up
-                document.body.style.backgroundColor = backgroundColors[(playerLevel - 1) % backgroundColors.length];
+                levelUp();
             }
         }
     
-        // Game loop
+        // 等级提升函数
+        function levelUp() {
+            playerLevel++;
+            playerExp = 0;
+
+            // 记录等级提升时间
+            const timeNow = new Date();
+            const timeString = `${timeNow.getHours()}:${timeNow.getMinutes()}:${timeNow.getSeconds()}`;
+            const logEntry = document.createElement('li');
+            logEntry.textContent = `Level ${playerLevel} at ${timeString}`;
+            logList.appendChild(logEntry);
+
+            // 逐渐背景颜色变化
+            const nextColor = backgroundColors[(playerLevel - 1) % backgroundColors.length];
+            document.body.style.backgroundColor = nextColor;
+        }
+    
+        // 测试按钮点击事件：每点击一次按钮提升等级
+        testButton.addEventListener('click', () => {
+            levelUp();
+        });
+    
         function gameLoop() {
             updatePlayer();
             updateBullets();
-            checkBulletEnemyCollisions();
             updateEnemies();
-            updateItems();
+            checkBulletEnemyCollisions();
             updateExpBar();
-    
             requestAnimationFrame(gameLoop);
         }
-    
-        // Set an interval to create enemies every second
+
         setInterval(createEnemy, spawnInterval);
     
-        // Start the game loop
         gameLoop();
     </script>
 </body>
