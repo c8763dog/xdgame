@@ -10,7 +10,7 @@ function drawBackground() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);  // 绘制整个画布为黑色
 }
 
-// Load Images
+// 加载玩家和子弹图片
 const playerImg = new Image();
 playerImg.src = 'assets/a.png';
 
@@ -26,11 +26,10 @@ monsterMoveImages[0].src = 'assets/move_0.png';
 monsterMoveImages[1].src = 'assets/move_1.png';
 monsterMoveImages[2].src = 'assets/move_2.png';
 
-// Platform and Ground
+// 游戏变量
 const groundHeight = 100;
 const platformY = canvas.height - groundHeight;
 
-// 游戏变量
 let player = {
     x: 100,
     y: platformY - 50, // 玩家出生位置
@@ -90,6 +89,7 @@ class Monster {
         this.height = 50;
         this.speed = 2;
         this.health = 100;
+        this.maxHealth = 100;
         this.movingLeft = Math.random() > 0.5; // 随机初始方向
         this.animationFrame = 0;
     }
@@ -111,6 +111,20 @@ class Monster {
 
     draw() {
         ctx.drawImage(monsterMoveImages[this.animationFrame], this.x, this.y, this.width, this.height);
+        this.drawHealthBar();
+    }
+
+    // 绘制怪物的血量条
+    drawHealthBar() {
+        const healthBarWidth = this.width;
+        const healthBarHeight = 5;
+        const healthRatio = this.health / this.maxHealth;
+
+        ctx.fillStyle = '#ff0000'; // 红色表示未损失的血量
+        ctx.fillRect(this.x, this.y - 10, healthBarWidth, healthBarHeight);
+
+        ctx.fillStyle = '#00ff00'; // 绿色表示当前剩余的血量
+        ctx.fillRect(this.x, this.y - 10, healthBarWidth * healthRatio, healthBarHeight);
     }
 
     // 处理受伤
@@ -151,13 +165,17 @@ function levelUp() {
 
 // 玩家经验条绘制
 function drawExpBar() {
+    const barWidth = 200;
+    const barHeight = 20;
+    const expRatio = player.exp / player.expToLevelUp;
+
     ctx.fillStyle = '#ffffff'; // 白色背景
-    ctx.fillRect(20, 20, 200, 20); // 背景
+    ctx.fillRect(20, 20, barWidth, barHeight); // 绘制经验条背景
     ctx.fillStyle = '#00ff00'; // 绿色经验条
-    ctx.fillRect(20, 20, (player.exp / player.expToLevelUp) * 200, 20);
+    ctx.fillRect(20, 20, barWidth * expRatio, barHeight); // 绘制经验条进度
     ctx.fillStyle = '#000000'; // 等级文本颜色
     ctx.font = '16px Arial';
-    ctx.fillText(`Level: ${player.level}`, 20, 55);
+    ctx.fillText(`Level: ${player.level}`, 20, 55); // 显示等级
 }
 
 // 玩家移动逻辑
