@@ -31,6 +31,12 @@ let enemies = []; // 敌人数组
 let keys = {};
 let mapOffsetX = 0; // 地图的偏移量，用于地图扩展
 
+// 绘制黑色背景
+function drawBackground() {
+    ctx.fillStyle = '#000000';  // 黑色背景
+    ctx.fillRect(0, 0, canvas.width, canvas.height);  // 填充整个画布为黑色
+}
+
 // Bullet Class (橙色攻击方块)
 class Bullet {
     constructor(x, y, direction) {
