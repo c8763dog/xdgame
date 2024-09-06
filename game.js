@@ -4,6 +4,12 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// 背景设置为纯黑色
+function drawBackground() {
+    ctx.fillStyle = '#000000';  // 黑色背景
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 // Load Images
 const playerImg = new Image();
 playerImg.src = 'assets/a.png';
@@ -158,11 +164,11 @@ function update() {
 
 // Draw Game Elements
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawPlatform();
-    drawPlayer();
-    drawBullets();
-    monsters.forEach(monster => monster.draw());
+    drawBackground(); // 绘制黑色背景
+    drawPlatform();   // 绘制平台
+    drawPlayer();     // 绘制玩家
+    drawBullets();    // 绘制子弹
+    monsters.forEach(monster => monster.draw()); // 绘制怪物
 }
 
 // Game Loop
