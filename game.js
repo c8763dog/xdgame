@@ -196,6 +196,18 @@ function movePlayer() {
     }
 }
 
+// 绘制玩家
+function drawPlayer() {
+    ctx.save();
+    if (!player.facingRight) {
+        ctx.scale(-1, 1);
+        ctx.drawImage(playerImg, -player.x - player.width, player.y, player.width, player.height);
+    } else {
+        ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    }
+    ctx.restore();
+}
+
 // 检测子弹是否击中怪物
 function checkBulletCollision() {
     bullets.forEach((bullet, bIndex) => {
@@ -210,6 +222,16 @@ function checkBulletCollision() {
                 bullets.splice(bIndex, 1); // 删除子弹
             }
         });
+    });
+}
+
+// 更新子弹
+function updateBullets() {
+    bullets.forEach((bullet, index) => {
+        bullet.update();
+        if (bullet.x < 0 || bullet.x > canvas.width) {
+            bullets.splice(index, 1); // 删除超出边界的子弹
+        }
     });
 }
 
@@ -264,6 +286,18 @@ function keyUp(e) {
     if (!keys['a'] && !keys['d']) {
         player.dx = 0;
     }
+}
+
+// 绘制平台
+function drawPlatform() {
+    ctx.fillStyle = '#654321'; // 平台颜色
+    ctx.fillRect(0, platformY, canvas.width, groundHeight); // 绘制平台
+}
+
+// 射击子弹
+function shootBullet() {
+    const bulletDirection = player.facingRight ? 'right' : 'left';
+    bullets.push(new Bullet(player.x + player.width / 2, player.y + player.height / 2, bulletDirection));
 }
 
 // 初始化怪物
