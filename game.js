@@ -6,8 +6,8 @@ canvas.height = window.innerHeight;
 
 // 背景设置为纯黑色
 function drawBackground() {
-    ctx.fillStyle = '#000000';  // 黑色背景
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000000';  // 设置填充颜色为黑色
+    ctx.fillRect(0, 0, canvas.width, canvas.height);  // 绘制整个画布为黑色
 }
 
 // Load Images
@@ -30,10 +30,10 @@ monsterMoveImages[2].src = 'assets/move_2.png';
 const groundHeight = 100;
 const platformY = canvas.height - groundHeight;
 
-// Game Variables
+// 游戏变量
 let player = {
     x: 100,
-    y: platformY - 50, // Place player on platform
+    y: platformY - 50, // 玩家出生位置
     width: 50,
     height: 50,
     speed: 5,
@@ -41,13 +41,18 @@ let player = {
     dy: 0,
     health: 100,
     exp: 0,
+    expToLevelUp: 100,
+    level: 1,
     facingRight: true,
-    grounded: true
+    grounded: true,
+    jumpPower: 15, // 跳跃高度
+    gravity: 0.8 // 重力
 };
 
 let bullets = [];
 let monsters = [];
 let keys = {};
+let gameOver = false;
 
 // Bullet Class
 class Bullet {
@@ -85,7 +90,7 @@ class Monster {
         this.height = 50;
         this.speed = 2;
         this.health = 100;
-        this.movingLeft = Math.random() > 0.5; // Random initial direction
+        this.movingLeft = Math.random() > 0.5; // 随机初始方向
         this.animationFrame = 0;
     }
 
@@ -107,78 +112,117 @@ class Monster {
     draw() {
         ctx.drawImage(monsterMoveImages[this.animationFrame], this.x, this.y, this.width, this.height);
     }
+
+    // 处理受伤
+    takeDamage(damage) {
+        this.health -= damage;
+        if (this.health <= 0) {
+            this.die();
+        }
+    }
+
+    // 处理死亡
+    die() {
+        const index = monsters.indexOf(this);
+        if (index > -1) {
+            monsters.splice(index, 1); // 从怪物列表中移除
+        }
+        player.exp += 20; // 玩家获得经验值
+        if (player.exp >= player.expToLevelUp) {
+            levelUp();
+        }
+    }
 }
 
-// Draw Ground (Platform)
-function drawPlatform() {
-    ctx.fillStyle = '#654321';
-    ctx.fillRect(0, platformY, canvas.width, groundHeight);
+// 玩家跳跃
+function jump() {
+    if (player.grounded) {
+        player.dy = -player.jumpPower;
+        player.grounded = false;
+    }
 }
 
-// Control Player Movement
+// 玩家升级
+function levelUp() {
+    player.level += 1;
+    player.exp = 0;
+    player.expToLevelUp += 50; // 下一级需要更多经验
+}
+
+// 玩家经验条绘制
+function drawExpBar() {
+    ctx.fillStyle = '#ffffff'; // 白色背景
+    ctx.fillRect(20, 20, 200, 20); // 背景
+    ctx.fillStyle = '#00ff00'; // 绿色经验条
+    ctx.fillRect(20, 20, (player.exp / player.expToLevelUp) * 200, 20);
+    ctx.fillStyle = '#000000'; // 等级文本颜色
+    ctx.font = '16px Arial';
+    ctx.fillText(`Level: ${player.level}`, 20, 55);
+}
+
+// 玩家移动逻辑
 function movePlayer() {
     player.x += player.dx;
+    player.dy += player.gravity;
+    player.y += player.dy;
+
+    // 边界检测
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-}
 
-// Draw Player
-function drawPlayer() {
-    ctx.save();
-    if (!player.facingRight) {
-        ctx.scale(-1, 1);
-        ctx.drawImage(playerImg, -player.x - player.width, player.y, player.width, player.height);
-    } else {
-        ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    // 玩家落地
+    if (player.y + player.height >= platformY) {
+        player.y = platformY - player.height;
+        player.dy = 0;
+        player.grounded = true;
     }
-    ctx.restore();
 }
 
-// Shoot Bullet
-function shootBullet() {
-    const bulletDirection = player.facingRight ? 'right' : 'left';
-    bullets.push(new Bullet(player.x + player.width / 2, player.y + player.height / 2, bulletDirection));
-}
-
-// Update Bullets
-function updateBullets() {
-    bullets.forEach((bullet, index) => {
-        bullet.update();
-        if (bullet.x < 0 || bullet.x > canvas.width) {
-            bullets.splice(index, 1);
-        }
+// 检测子弹是否击中怪物
+function checkBulletCollision() {
+    bullets.forEach((bullet, bIndex) => {
+        monsters.forEach((monster, mIndex) => {
+            if (
+                bullet.x < monster.x + monster.width &&
+                bullet.x + bullet.width > monster.x &&
+                bullet.y < monster.y + monster.height &&
+                bullet.y + bullet.height > monster.y
+            ) {
+                monster.takeDamage(50); // 每次命中造成 50 点伤害
+                bullets.splice(bIndex, 1); // 删除子弹
+            }
+        });
     });
 }
 
-// Draw Bullets
-function drawBullets() {
-    bullets.forEach(bullet => bullet.draw());
-}
-
-// Update Game State
+// 游戏更新
 function update() {
     movePlayer();
     updateBullets();
     monsters.forEach(monster => monster.update());
+    checkBulletCollision(); // 检查子弹与怪物的碰撞
 }
 
-// Draw Game Elements
+// 绘制游戏元素
 function draw() {
     drawBackground(); // 绘制黑色背景
     drawPlatform();   // 绘制平台
     drawPlayer();     // 绘制玩家
     drawBullets();    // 绘制子弹
     monsters.forEach(monster => monster.draw()); // 绘制怪物
+    drawExpBar();     // 绘制经验条
 }
 
-// Game Loop
+// 游戏循环
 function gameLoop() {
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
+    if (!gameOver) {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
 }
 
-// Handle Key Presses
+// 处理按键按下
 function keyDown(e) {
     keys[e.key] = true;
     if (keys['a'] || keys['A']) {
@@ -188,12 +232,15 @@ function keyDown(e) {
         player.dx = player.speed;
         player.facingRight = true;
     }
+    if (keys['w'] || keys['W'] || keys[' '] || keys['Space']) {
+        jump(); // 玩家跳跃
+    }
     if (keys['j'] || keys['J']) {
-        shootBullet();
+        shootBullet(); // 玩家射击
     }
 }
 
-// Handle Key Releases
+// 处理按键释放
 function keyUp(e) {
     keys[e.key] = false;
     if (!keys['a'] && !keys['d']) {
@@ -201,17 +248,17 @@ function keyUp(e) {
     }
 }
 
-// Initialize Monsters
+// 初始化怪物
 function initMonsters() {
     for (let i = 0; i < 3; i++) {
         monsters.push(new Monster());
     }
 }
 
-// Event Listeners
+// 事件监听
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
 
-// Start Game
+// 开始游戏
 initMonsters();
 gameLoop();
