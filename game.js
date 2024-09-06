@@ -1,126 +1,221 @@
-const player = document.getElementById('player');
-const container = document.querySelector('.game-container');
-const bulletSize = 30;
-const playerSize = 100;
-const monsterSize = 50;
-const bigMonsterScale = 2;
-const platformY = container.clientHeight - playerSize;
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-const playerSpeed = 10;
-const bulletSpeed = 10;
-const monsterSpeed = 2;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-let playerX = 100;
-let playerY = platformY;
-let bullets = [];
-let monsters = [];
-let monsterImages = {
-    move: [],
-    stand: [],
-    hit: [],
-    die: []
+// Load Images
+const playerImg = new Image();
+playerImg.src = 'assets/a.png';
+
+const bulletImg = new Image();
+bulletImg.src = 'assets/b.png';
+
+const monsterMoveImages = [
+    new Image(),
+    new Image(),
+    new Image(),
+];
+monsterMoveImages[0].src = 'assets/move_0.png';
+monsterMoveImages[1].src = 'assets/move_1.png';
+monsterMoveImages[2].src = 'assets/move_2.png';
+
+const monsterStandImages = [
+    new Image(),
+    new Image(),
+    new Image(),
+];
+monsterStandImages[0].src = 'assets/stand_0.png';
+monsterStandImages[1].src = 'assets/stand_1.png';
+monsterStandImages[2].src = 'assets/stand_2.png';
+
+const monsterHitImage = new Image();
+monsterHitImage.src = 'assets/hit1_0.png';
+
+const monsterDieImages = [
+    new Image(),
+    new Image(),
+    new Image(),
+];
+monsterDieImages[0].src = 'assets/die1_0.png';
+monsterDieImages[1].src = 'assets/die1_1.png';
+monsterDieImages[2].src = 'assets/die1_2.png';
+
+// Game Variables
+let player = {
+    x: 100,
+    y: canvas.height - 150,
+    width: 50,
+    height: 50,
+    speed: 5,
+    dx: 0,
+    dy: 0,
+    health: 100,
+    exp: 0,
+    facingRight: true
 };
 
-// Load monster images
-function loadMonsterImages() {
-    const imageSources = {
-        move: ['assets/move_0.png', 'assets/move_1.png', 'assets/move_2.png'],
-        stand: ['assets/stand_0.png', 'assets/stand_1.png', 'assets/stand_2.png'],
-        hit: ['assets/hit1_0.png'],
-        die: ['assets/die1_0.png', 'assets/die1_1.png', 'assets/die1_2.png']
-    };
+let bullets = [];
+let monsters = [];
+let keys = {};
 
-    Object.keys(imageSources).forEach(state => {
-        imageSources[state].forEach(src => {
-            const img = new Image();
-            img.src = src;
-            monsterImages[state].push(img);
-        });
-    });
-}
-
-// Create and display monsters
-function createMonster() {
-    const monster = document.createElement('div');
-    monster.className = 'monster';
-    monster.style.backgroundImage = `url('assets/move_0.png')`; // Example of setting initial state
-    monster.style.left = `${Math.random() * (container.clientWidth - monsterSize)}px`;
-    monster.style.top = `${platformY - monsterSize}px`;
-    container.appendChild(monster);
-    monsters.push(monster);
-}
-
-// Update player position
-function updatePlayerPosition() {
-    player.style.left = `${playerX}px`;
-    player.style.top = `${playerY}px`;
-}
-
-// Update bullets
-function updateBullets() {
-    bullets.forEach(bullet => {
-        let bulletX = parseFloat(bullet.style.left);
-        bulletX += bulletSpeed;
-        bullet.style.left = `${bulletX}px`;
-
-        if (bulletX > container.clientWidth) {
-            container.removeChild(bullet);
-            bullets = bullets.filter(b => b !== bullet);
-        }
-    });
-}
-
-// Move monsters
-function updateMonsters() {
-    monsters.forEach(monster => {
-        let monsterX = parseFloat(monster.style.left);
-        monsterX += monsterSpeed;
-        monster.style.left = `${monsterX}px`;
-
-        if (monsterX < 0 || monsterX + monsterSize > container.clientWidth) {
-            monsterSpeed = -monsterSpeed; // Bounce back
-        }
-    });
-}
-
-// Shoot a bullet
-function shootBullet() {
-    const bullet = document.createElement('div');
-    bullet.className = 'bullet';
-    bullet.style.left = `${playerX + playerSize}px`;
-    bullet.style.top = `${playerY + playerSize / 2 - bulletSize / 2}px`;
-    container.appendChild(bullet);
-    bullets.push(bullet);
-}
-
-// Key press handling
-function handleKeyPress(event) {
-    switch (event.code) {
-        case 'ArrowRight':
-            playerX += playerSpeed;
-            break;
-        case 'ArrowLeft':
-            playerX -= playerSpeed;
-            break;
-        case 'Space':
-            shootBullet();
-            break;
+// Bullet Class
+class Bullet {
+    constructor(x, y, direction) {
+        this.x = x;
+        this.y = y;
+        this.width = 20;
+        this.height = 10;
+        this.speed = 10;
+        this.direction = direction;
     }
 
-    if (playerX < 0) playerX = 0;
-    if (playerX > container.clientWidth - playerSize) playerX = container.clientWidth - playerSize;
+    update() {
+        this.x += this.direction === 'right' ? this.speed : -this.speed;
+    }
 
-    updatePlayerPosition();
+    draw() {
+        ctx.save();
+        if (this.direction === 'left') {
+            ctx.scale(-1, 1);
+            ctx.drawImage(bulletImg, -this.x - this.width, this.y, this.width, this.height);
+        } else {
+            ctx.drawImage(bulletImg, this.x, this.y, this.width, this.height);
+        }
+        ctx.restore();
+    }
 }
 
-document.addEventListener('keydown', handleKeyPress);
+// Monster Class
+class Monster {
+    constructor() {
+        this.x = canvas.width - 100;
+        this.y = canvas.height - 150;
+        this.width = 50;
+        this.height = 50;
+        this.speed = 2;
+        this.health = 100;
+        this.facingRight = false;
+        this.movingLeft = true;
+        this.animationFrame = 0;
+    }
 
-function gameLoop() {
+    update() {
+        this.animationFrame = (this.animationFrame + 1) % 3;
+        if (this.movingLeft) {
+            this.x -= this.speed;
+            if (this.x <= 50) {
+                this.movingLeft = false;
+            }
+        } else {
+            this.x += this.speed;
+            if (this.x >= canvas.width - 100) {
+                this.movingLeft = true;
+            }
+        }
+    }
+
+    draw() {
+        ctx.drawImage(monsterMoveImages[this.animationFrame], this.x, this.y, this.width, this.height);
+    }
+}
+
+// Control Player Movement
+function movePlayer() {
+    player.x += player.dx;
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+}
+
+// Draw Player
+function drawPlayer() {
+    ctx.save();
+    if (!player.facingRight) {
+        ctx.scale(-1, 1);
+        ctx.drawImage(playerImg, -player.x - player.width, player.y, player.width, player.height);
+    } else {
+        ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    }
+    ctx.restore();
+}
+
+// Shoot Bullet
+function shootBullet() {
+    const bulletDirection = player.facingRight ? 'right' : 'left';
+    bullets.push(new Bullet(player.x + player.width / 2, player.y + player.height / 2, bulletDirection));
+}
+
+// Update Bullets
+function updateBullets() {
+    bullets.forEach((bullet, index) => {
+        bullet.update();
+        if (bullet.x < 0 || bullet.x > canvas.width) {
+            bullets.splice(index, 1);
+        }
+    });
+}
+
+// Draw Bullets
+function drawBullets() {
+    bullets.forEach(bullet => bullet.draw());
+}
+
+// Update Game State
+function update() {
+    movePlayer();
     updateBullets();
-    updateMonsters();
+    monsters.forEach(monster => monster.update());
+}
+
+// Draw Game Elements
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPlayer();
+    drawBullets();
+    monsters.forEach(monster => monster.draw());
+}
+
+// Game Loop
+function gameLoop() {
+    update();
+    draw();
     requestAnimationFrame(gameLoop);
 }
 
-loadMonsterImages();
-createMonster();
+// Handle Key Presses
+function keyDown(e) {
+    keys[e.key] = true;
+    if (keys['a'] || keys['A']) {
+        player.dx = -player.speed;
+        player.facingRight = false;
+    } else if (keys['d'] || keys['D']) {
+        player.dx = player.speed;
+        player.facingRight = true;
+    }
+    if (keys['j'] || keys['J']) {
+        shootBullet();
+    }
+}
+
+// Handle Key Releases
+function keyUp(e) {
+    keys[e.key] = false;
+    if (!keys['a'] && !keys['d']) {
+        player.dx = 0;
+    }
+}
+
+// Initialize Monsters
+function initMonsters() {
+    for (let i = 0; i < 3; i++) {
+        monsters.push(new Monster());
+    }
+}
+
+// Event Listeners
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
+
+// Start Game
+initMonsters();
 gameLoop();

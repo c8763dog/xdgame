@@ -3,46 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Game</title>
+    <title>2D Platform Game</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #87CEEB; /* 背景颜色 */
         }
-        .game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: url('assets/bp.png') no-repeat center center fixed;
+        canvas {
+            display: block;
+            background-image: url('assets/bp.png');
             background-size: cover;
-        }
-        .player, .bullet, .monster {
-            position: absolute;
-            background-size: cover;
-        }
-        .player {
-            width: 100px;
-            height: 100px;
-            background-image: url('assets/a.png');
-        }
-        .bullet {
-            width: 30px;
-            height: 30px;
-            background-image: url('assets/b.png');
-        }
-        .monster {
-            width: 50px;
-            height: 50px;
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <div id="player" class="player"></div>
-        <div id="monster" class="monster"></div>
-        <!-- More monster elements can be added here if needed -->
-    </div>
+    <canvas id="gameCanvas"></canvas>
     <script src="game.js"></script>
 </body>
 </html>
