@@ -121,7 +121,7 @@ function drawBullets() {
 // 生成怪物
 function spawnMonster(isBig) {
     const monster = {
-        x: Math.random() * (canvas.width - 100),
+        x: Math.random() * (canvas.width - (isBig ? 200 : 100)),
         y: -100,
         width: isBig ? 200 : 100,
         height: isBig ? 200 : 100,
