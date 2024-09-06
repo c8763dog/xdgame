@@ -20,31 +20,14 @@ monsterMoveImages[0].src = 'assets/move_0.png';
 monsterMoveImages[1].src = 'assets/move_1.png';
 monsterMoveImages[2].src = 'assets/move_2.png';
 
-const monsterStandImages = [
-    new Image(),
-    new Image(),
-    new Image(),
-];
-monsterStandImages[0].src = 'assets/stand_0.png';
-monsterStandImages[1].src = 'assets/stand_1.png';
-monsterStandImages[2].src = 'assets/stand_2.png';
-
-const monsterHitImage = new Image();
-monsterHitImage.src = 'assets/hit1_0.png';
-
-const monsterDieImages = [
-    new Image(),
-    new Image(),
-    new Image(),
-];
-monsterDieImages[0].src = 'assets/die1_0.png';
-monsterDieImages[1].src = 'assets/die1_1.png';
-monsterDieImages[2].src = 'assets/die1_2.png';
+// Platform and Ground
+const groundHeight = 100;
+const platformY = canvas.height - groundHeight;
 
 // Game Variables
 let player = {
     x: 100,
-    y: canvas.height - 150,
+    y: platformY - 50, // Place player on platform
     width: 50,
     height: 50,
     speed: 5,
@@ -52,7 +35,8 @@ let player = {
     dy: 0,
     health: 100,
     exp: 0,
-    facingRight: true
+    facingRight: true,
+    grounded: true
 };
 
 let bullets = [];
@@ -89,14 +73,13 @@ class Bullet {
 // Monster Class
 class Monster {
     constructor() {
-        this.x = canvas.width - 100;
-        this.y = canvas.height - 150;
+        this.x = Math.random() * (canvas.width - 100) + 50;
+        this.y = platformY - 50;
         this.width = 50;
         this.height = 50;
         this.speed = 2;
         this.health = 100;
-        this.facingRight = false;
-        this.movingLeft = true;
+        this.movingLeft = Math.random() > 0.5; // Random initial direction
         this.animationFrame = 0;
     }
 
@@ -109,7 +92,7 @@ class Monster {
             }
         } else {
             this.x += this.speed;
-            if (this.x >= canvas.width - 100) {
+            if (this.x >= canvas.width - this.width - 50) {
                 this.movingLeft = true;
             }
         }
@@ -118,6 +101,12 @@ class Monster {
     draw() {
         ctx.drawImage(monsterMoveImages[this.animationFrame], this.x, this.y, this.width, this.height);
     }
+}
+
+// Draw Ground (Platform)
+function drawPlatform() {
+    ctx.fillStyle = '#654321';
+    ctx.fillRect(0, platformY, canvas.width, groundHeight);
 }
 
 // Control Player Movement
@@ -170,6 +159,7 @@ function update() {
 // Draw Game Elements
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawPlatform();
     drawPlayer();
     drawBullets();
     monsters.forEach(monster => monster.draw());
