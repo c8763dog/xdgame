@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D 横版游戏</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: url('assets/sheshoucun.mp3') no-repeat center center;
+            background-size: cover;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameCanvas">
+        <img id="player" src="assets/a.png" style="position: absolute; width: 100px; height: 100px;">
+        <script src="script.js"></script>
+    </div>
+</body>
+</html>
