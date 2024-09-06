@@ -15,6 +15,7 @@ let player = {
     width: 50,
     height: 50,
     speed: 5,
+    airSpeedMultiplier: 1.5, // 空中速度增加
     dx: 0,
     dy: 0,
     gravity: 0.8,
@@ -28,7 +29,6 @@ let player = {
 let bullets = [];
 let enemies = []; // 敌人数组
 let keys = {};
-let gameOver = false;
 let mapOffsetX = 0; // 地图的偏移量，用于地图扩展
 
 // Bullet Class (橙色攻击方块)
@@ -78,12 +78,14 @@ class Enemy {
 
 // 玩家移动和跳跃逻辑
 function movePlayer() {
-    player.x += player.dx;
+    // 空中移动速度增加
+    const speed = player.grounded ? player.speed : player.speed * player.airSpeedMultiplier;
+    player.x += player.dx * speed;
     player.y += player.dy;
 
     // 地图扩展逻辑：当玩家向右移动时，地图向前扩展
     if (player.x + player.width / 2 > canvas.width / 2) {
-        mapOffsetX += player.dx; // 根据玩家的移动调整地图的偏移量
+        mapOffsetX += player.dx * speed; // 根据玩家的移动调整地图的偏移量
         player.x = canvas.width / 2 - player.width / 2; // 将玩家固定在画面中间
     }
 
@@ -96,7 +98,7 @@ function movePlayer() {
     if (player.y + player.height >= platformY) {
         player.y = platformY - player.height;
         player.dy = 0;
-        player.grounded = true;
+        player.grounded = true; // 玩家触地
     }
 }
 
@@ -108,10 +110,9 @@ function drawPlayer() {
 
 // 玩家跳跃
 function jump() {
-    if (player.grounded && !player.jumpPressed) {
+    if (player.grounded) {
         player.dy = -player.jumpPower;  // 向上跳
         player.grounded = false;  // 跳起后不再接触地面
-        player.jumpPressed = true;  // 防止连续跳跃
     }
 }
 
@@ -124,9 +125,9 @@ function shootBullet() {
 // 处理按键按下
 function keyDown(e) {
     if (e.key === 'a' || e.key === 'A') {
-        player.dx = -player.speed;  // 左移
+        player.dx = -1;  // 左移
     } else if (e.key === 'd' || e.key === 'D') {
-        player.dx = player.speed;  // 右移
+        player.dx = 1;  // 右移
     } else if (e.key === 'w' || e.key === 'W' || e.key === ' ') {
         jump();  // 跳跃
     } else if (e.key === 'j' || e.key === 'J') {
@@ -138,9 +139,6 @@ function keyDown(e) {
 function keyUp(e) {
     if (e.key === 'a' || e.key === 'A' || e.key === 'd' || e.key === 'D') {
         player.dx = 0;  // 停止移动
-    }
-    if (e.key === 'w' || e.key === 'W' || e.key === ' ') {
-        player.jumpPressed = false;  // 松开跳跃键
     }
 }
 
