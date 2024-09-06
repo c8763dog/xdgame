@@ -4,12 +4,6 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// 绘制黑色背景
-function drawBackground() {
-    ctx.fillStyle = '#000000';  // 黑色背景
-    ctx.fillRect(0, 0, canvas.width, canvas.height);  // 填充整个画布为黑色
-}
-
 // 游戏变量
 const groundHeight = 100;
 const platformY = canvas.height - groundHeight;
@@ -32,9 +26,10 @@ let player = {
 };
 
 let bullets = [];
-let squares = [];
+let enemies = []; // 敌人数组
 let keys = {};
 let gameOver = false;
+let mapOffsetX = 0; // 地图的偏移量，用于地图扩展
 
 // Bullet Class (橙色攻击方块)
 class Bullet {
@@ -53,23 +48,31 @@ class Bullet {
 
     draw() {
         ctx.fillStyle = '#FFA500';  // 橙色子弹
-        ctx.fillRect(this.x, this.y, this.width, this.height);  // 绘制橙色方块
+        ctx.fillRect(this.x - mapOffsetX, this.y, this.width, this.height);  // 绘制橙色方块
     }
 }
 
-// Square Class (用于生成紫色、青蓝色、青灰色方块)
-class Square {
-    constructor(x, y, color) {
+// Enemy Class (白色敌人方块)
+class Enemy {
+    constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.width = 30;
-        this.height = 30;
-        this.color = color;
+        this.width = 50;
+        this.height = 50;
+        this.speed = 2;
+    }
+
+    update() {
+        // 简单的左右移动逻辑
+        this.x -= this.speed;
+        if (this.x + this.width < 0) {
+            this.x = canvas.width + Math.random() * 500; // 重置敌人位置
+        }
     }
 
     draw() {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);  // 绘制不同颜色的方块
+        ctx.fillStyle = '#FFFFFF'; // 白色敌人
+        ctx.fillRect(this.x - mapOffsetX, this.y, this.width, this.height);  // 绘制白色敌人方块
     }
 }
 
@@ -78,14 +81,16 @@ function movePlayer() {
     player.x += player.dx;
     player.y += player.dy;
 
+    // 地图扩展逻辑：当玩家向右移动时，地图向前扩展
+    if (player.x + player.width / 2 > canvas.width / 2) {
+        mapOffsetX += player.dx; // 根据玩家的移动调整地图的偏移量
+        player.x = canvas.width / 2 - player.width / 2; // 将玩家固定在画面中间
+    }
+
     // 添加重力
     if (!player.grounded) {
         player.dy += player.gravity;
     }
-
-    // 边界检测，防止玩家移出画布
-    if (player.x < 0) player.x = 0;
-    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
 
     // 防止玩家掉出平台
     if (player.y + player.height >= platformY) {
@@ -116,14 +121,6 @@ function shootBullet() {
     bullets.push(new Bullet(player.x + player.width / 2, player.y + player.height / 2, bulletDirection));
 }
 
-// 生成紫色、青蓝色和青灰色方块
-function generateSquares() {
-    const colors = ['#800080', '#008080', '#708090']; // 紫色、青蓝色、青灰色
-    for (let i = 0; i < colors.length; i++) {
-        squares.push(new Square(Math.random() * canvas.width, Math.random() * (platformY - 30), colors[i]));
-    }
-}
-
 // 处理按键按下
 function keyDown(e) {
     if (e.key === 'a' || e.key === 'A') {
@@ -150,7 +147,7 @@ function keyUp(e) {
 // 绘制平台
 function drawPlatform() {
     ctx.fillStyle = '#654321'; // 棕色平台
-    ctx.fillRect(0, platformY, canvas.width, groundHeight); // 绘制平台
+    ctx.fillRect(-mapOffsetX, platformY, canvas.width + mapOffsetX, groundHeight); // 随地图扩展的可移动平台
 }
 
 // 绘制经验条
@@ -169,16 +166,22 @@ function drawExpBar() {
 function updateBullets() {
     bullets.forEach((bullet, index) => {
         bullet.update();
-        if (bullet.x < 0 || bullet.x > canvas.width) {
+        if (bullet.x < 0 || bullet.x > canvas.width + mapOffsetX) {
             bullets.splice(index, 1); // 删除超出边界的子弹
         }
     });
+}
+
+// 更新敌人
+function updateEnemies() {
+    enemies.forEach(enemy => enemy.update());
 }
 
 // 游戏更新
 function update() {
     movePlayer();
     updateBullets();
+    updateEnemies();
 }
 
 // 绘制游戏元素
@@ -191,8 +194,8 @@ function draw() {
     // 绘制子弹
     bullets.forEach(bullet => bullet.draw());
 
-    // 绘制紫色、青蓝色和青灰色方块
-    squares.forEach(square => square.draw());
+    // 绘制敌人
+    enemies.forEach(enemy => enemy.draw());
 }
 
 // 游戏循环
@@ -206,8 +209,11 @@ function gameLoop() {
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
 
-// 生成方块
-generateSquares();
+// 初始化敌人
+function initEnemies() {
+    enemies.push(new Enemy(canvas.width + 200, platformY - 50)); // 生成白色敌人
+}
 
 // 开始游戏
+initEnemies();
 gameLoop();
