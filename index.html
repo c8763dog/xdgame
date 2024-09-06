@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Platform Game with JavaScript</title>
+    <title>2D Platform Game with Red Square and Exp Bar</title>
     <style>
         body {
             margin: 0;
-            background-color: #000; /* 黑色背景 */
+            background-color: #000; /* 初始背景颜色 */
         }
         .game-container {
             position: relative;
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            background-color: #87CEEB; /* 蓝天背景 */
         }
-        .platform, .player, .enemy {
+        .platform, .player, .enemy, .bullet, .roof, .item, .spawned-item {
             position: absolute;
         }
         .platform {
@@ -25,19 +24,85 @@
             height: 100px;
             background-color: #654321; /* 棕色平台 */
         }
+        .roof {
+            width: 100px;
+            height: 20px;
+            background-color: transparent;
+        }
+        .roof.left {
+            top: 0;
+            left: 0;
+        }
+        .roof.right {
+            top: 0;
+            right: 0;
+        }
         .player {
             width: 50px;
             height: 50px;
-            bottom: 100px; /* 玩家位于平台之上 */
+            bottom: 100px;
             left: 100px;
             background-color: #00FF00; /* 绿色玩家 */
         }
         .enemy {
             width: 50px;
             height: 50px;
-            bottom: 100px; /* 敌人位于平台之上 */
-            left: 300px;
-            background-color: #FFFFFF; /* 白色敌人 */
+            background-color: #FFFFFF;
+        }
+        .enemy.black-bordered {
+            border: 5px solid black;
+            background-color: white;
+        }
+        .bullet {
+            width: 20px;
+            height: 20px;
+            background-color: #FFA500; /* 橘色子弹 */
+        }
+        .item {
+            width: 30px;
+            height: 30px;
+            font-size: 24px;
+            text-align: center;
+            color: red;
+            animation: float 2s ease-in-out infinite;
+        }
+        .spawned-item {
+            background-color: #FF0000; /* 黑底红色方块 */
+            width: 40px;
+            height: 40px;
+        }
+        @keyframes float {
+            0% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+        .exp-bar {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 20px;
+            background-color: #ddd;
+        }
+        .exp-fill {
+            width: 0;
+            height: 100%;
+            background-color: #00FF00; /* 经验条填充颜色 */
+        }
+        .level {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: white;
         }
     </style>
 </head>
@@ -45,32 +110,65 @@
 
     <div class="game-container">
         <div class="player"></div>
-        <div class="enemy"></div>
         <div class="platform"></div>
+        <div class="roof left"></div>
+        <div class="roof right"></div>
+        <div class="exp-bar">
+            <div class="exp-fill"></div>
+        </div>
+        <div class="level">Level: 1 (0%)</div>
     </div>
 
     <script>
         const player = document.querySelector('.player');
-        const enemy = document.querySelector('.enemy');
-
-        let playerPositionX = 100; // 玩家初始位置
-        const playerSpeed = 5; // 玩家移动速度
+        const expFill = document.querySelector('.exp-fill');
+        const levelText = document.querySelector('.level');
+        const gameContainer = document.querySelector('.game-container');
+    
+        let playerPositionX = 100;
+        let playerPositionY = window.innerHeight - 150;
+        const basePlayerSpeed = 5;
+        let playerSpeed = basePlayerSpeed;
         let isMovingLeft = false;
         let isMovingRight = false;
-
-        let enemyPositionX = 300; // 敌人初始位置
-        const enemySpeed = 2; // 敌人移动速度
-        let enemyDirection = 1; // 敌人移动方向，1为向右，-1为向左
-
-        // 键盘控制
+        let isJumping = false;
+        let jumpSpeed = 10;
+        let verticalVelocity = 0;
+        const gravity = 1;
+    
+        let bullets = [];
+        let playerExp = 0;
+        let playerLevel = 1;
+        const expPerLevel = 100;
+        let expMultiplier = 1;
+    
+        let enemies = [];
+        let enemySpeed = 10;
+        const enemyFallSpeed = 5;
+        let spawnInterval = 1000; // 每秒生成一个敌人
+    
+        const items = [];
+        const itemFallSpeed = 2;
+    
+        // Background color gradients for each level
+        const backgroundColors = ['#87CEEB', '#FFA07A', '#FF4500', '#FFD700', '#32CD32'];
+    
+        // Keyboard controls
         document.addEventListener('keydown', (e) => {
             if (e.key === 'a' || e.key === 'A') {
                 isMovingLeft = true;
             } else if (e.key === 'd' || e.key === 'D') {
                 isMovingRight = true;
+            } else if (e.key === 'w' || e.key === 'W') {
+                if (!isJumping) {
+                    isJumping = true;
+                    verticalVelocity = -jumpSpeed;
+                }
+            } else if (e.key === 'z' || e.key === 'Z') {
+                pickUpItem(); // Player picks up item when pressing 'Z'
             }
         });
-
+    
         document.addEventListener('keyup', (e) => {
             if (e.key === 'a' || e.key === 'A') {
                 isMovingLeft = false;
@@ -78,8 +176,8 @@
                 isMovingRight = false;
             }
         });
-
-        // 更新玩家位置
+    
+        // Update player position
         function updatePlayer() {
             if (isMovingLeft && playerPositionX > 0) {
                 playerPositionX -= playerSpeed;
@@ -87,28 +185,178 @@
             if (isMovingRight && playerPositionX < window.innerWidth - 50) {
                 playerPositionX += playerSpeed;
             }
-            player.style.left = playerPositionX + 'px';
-        }
-
-        // 更新敌人位置
-        function updateEnemy() {
-            enemyPositionX += enemySpeed * enemyDirection;
-            if (enemyPositionX <= 0 || enemyPositionX >= window.innerWidth - 50) {
-                enemyDirection *= -1; // 碰到屏幕边缘时反转方向
+    
+            if (isJumping) {
+                verticalVelocity += gravity;
+                playerPositionY += verticalVelocity;
+                if (playerPositionY >= window.innerHeight - 150) {
+                    playerPositionY = window.innerHeight - 150;
+                    isJumping = false;
+                    verticalVelocity = 0;
+                }
+            } else {
+                if (playerPositionY < window.innerHeight - 150) {
+                    verticalVelocity += gravity;
+                    playerPositionY += verticalVelocity;
+                }
             }
-            enemy.style.left = enemyPositionX + 'px';
+    
+            player.style.left = playerPositionX + 'px';
+            player.style.top = playerPositionY + 'px';
         }
-
-        // 游戏循环
+    
+        // Shoot a bullet
+        function shootBullet(mouseX, mouseY) {
+            const bullet = document.createElement('div');
+            bullet.classList.add('bullet');
+            bullet.style.left = playerPositionX + 'px';
+            bullet.style.bottom = '150px'; // Bullet appears above the player
+            gameContainer.appendChild(bullet);
+    
+            const angle = Math.atan2(mouseY - playerPositionY, mouseX - playerPositionX);
+            const bulletSpeed = 8;
+    
+            bullets.push({
+                element: bullet,
+                positionX: playerPositionX,
+                positionY: playerPositionY,
+                velocityX: Math.cos(angle) * bulletSpeed,
+                velocityY: Math.sin(angle) * bulletSpeed,
+                bounces: 0 // Track bullet bounces
+            });
+        }
+    
+        // Listen for mouse click to shoot bullets
+        document.addEventListener('click', (e) => {
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            shootBullet(mouseX, mouseY);
+        });
+    
+        // Create new enemy
+        function createEnemy() {
+            const enemy = document.createElement('div');
+            enemy.classList.add('enemy');
+            enemy.style.left = Math.random() * (window.innerWidth - 50) + 'px';
+            enemy.style.top = '0px'; // Start from the top
+            gameContainer.appendChild(enemy);
+    
+            enemies.push({
+                element: enemy,
+                positionX: parseFloat(enemy.style.left),
+                positionY: parseFloat(enemy.style.top),
+                health: 30 // 敌人的生命值
+            });
+        }
+    
+        // Update enemies
+        function updateEnemies() {
+            enemies.forEach((enemy, enemyIndex) => {
+                enemy.positionY += enemyFallSpeed;
+                enemy.element.style.left = enemy.positionX + 'px';
+                enemy.element.style.top = enemy.positionY + 'px';
+    
+                // Remove enemies that fall below the screen
+                if (enemy.positionY > window.innerHeight) {
+                    enemy.element.remove();
+                    enemies.splice(enemyIndex, 1);
+                }
+            });
+        }
+    
+        // Check collision between bullet and enemy
+        function checkBulletEnemyCollisions() {
+            bullets.forEach((bullet, bulletIndex) => {
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (
+                        bullet.positionX < enemy.positionX + 50 &&
+                        bullet.positionX + 20 > enemy.positionX &&
+                        bullet.positionY < enemy.positionY + 50 &&
+                        bullet.positionY + 20 > enemy.positionY
+                    ) {
+                        // Remove bullet
+                        bullet.element.remove();
+                        bullets.splice(bulletIndex, 1);
+    
+                        // Reduce health of the enemy
+                        enemy.health -= 10;
+    
+                        // Check if enemy is dead
+                        if (enemy.health <= 0) {
+                            // Remove enemy
+                            enemy.element.remove();
+                            enemies.splice(enemyIndex, 1);
+                            // Increase experience
+                            playerExp += 20; // 击败敌人后增加经验值
+                        }
+                    }
+                });
+            });
+        }
+    
+        // Create red squares
+        function createRedSquare() {
+            const item = document.createElement('div');
+            item.classList.add('spawned-item');
+            item.style.left = Math.random() * (window.innerWidth - 40) + 'px';
+            item.style.top = '0px';
+            gameContainer.appendChild(item);
+    
+            items.push({
+                element: item,
+                positionX: parseFloat(item.style.left),
+                positionY: parseFloat(item.style.top),
+                health: 20 // 红色方块的生命值
+            });
+        }
+    
+        // Update items
+        function updateItems() {
+            items.forEach((item, itemIndex) => {
+                item.positionY += itemFallSpeed;
+                item.element.style.left = item.positionX + 'px';
+                item.element.style.top = item.positionY + 'px';
+    
+                // Remove items that fall below the screen
+                if (item.positionY > window.innerHeight) {
+                    item.element.remove();
+                    items.splice(itemIndex, 1);
+                }
+            });
+        }
+    
+        // Update experience bar
+        function updateExpBar() {
+            const expPercent = Math.min((playerExp / expPerLevel) * 100, 100);
+            expFill.style.width = expPercent + '%';
+            levelText.textContent = `Level: ${playerLevel} (${expPercent.toFixed(2)}%)`;
+    
+            if (playerExp >= expPerLevel) {
+                playerLevel++;
+                playerExp = 0;
+    
+                // Change background color on level up
+                document.body.style.backgroundColor = backgroundColors[(playerLevel - 1) % backgroundColors.length];
+            }
+        }
+    
+        // Game loop
         function gameLoop() {
             updatePlayer();
-            updateEnemy();
-            requestAnimationFrame(gameLoop); // 循环调用游戏帧
+            updateBullets();
+            checkBulletEnemyCollisions();
+            updateEnemies();
+            updateItems();
+            updateExpBar();
+    
+            requestAnimationFrame(gameLoop);
         }
-
-        // 开始游戏循环
+    
+        // Set an interval to create enemies every second
+        setInterval(createEnemy, spawnInterval);
+    
+        // Start the game loop
         gameLoop();
     </script>
-
 </body>
 </html>
