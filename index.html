@@ -3,28 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game</title>
+    <title>Simple Game</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #000;
+            background-color: #87CEEB; /* 背景颜色 */
         }
-        #gameCanvas {
-            display: block;
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: url('assets/bp.png') no-repeat center center fixed;
             background-size: cover;
         }
-        #backgroundMusic {
-            display: none;
+        .player, .bullet, .monster {
+            position: absolute;
+            background-size: cover;
+        }
+        .player {
+            width: 100px;
+            height: 100px;
+            background-image: url('assets/a.png');
+        }
+        .bullet {
+            width: 30px;
+            height: 30px;
+            background-image: url('assets/b.png');
+        }
+        .monster {
+            width: 50px;
+            height: 50px;
         }
     </style>
 </head>
 <body>
-    <audio id="backgroundMusic" loop>
-        <source src="/assets/music.mp3">
-        Your browser does not support the audio element.
-    </audio>
-    <canvas id="gameCanvas"></canvas>
+    <div class="game-container">
+        <div id="player" class="player"></div>
+        <div id="monster" class="monster"></div>
+        <!-- More monster elements can be added here if needed -->
+    </div>
     <script src="game.js"></script>
 </body>
 </html>
