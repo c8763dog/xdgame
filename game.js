@@ -4,27 +4,11 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// 背景设置为纯黑色
+// 绘制黑色背景
 function drawBackground() {
-    ctx.fillStyle = '#000000';  // 设置填充颜色为黑色
-    ctx.fillRect(0, 0, canvas.width, canvas.height);  // 绘制整个画布为黑色
+    ctx.fillStyle = '#000000';  // 黑色背景
+    ctx.fillRect(0, 0, canvas.width, canvas.height);  // 填充整个画布为黑色
 }
-
-// 加载玩家和子弹图片
-const playerImg = new Image();
-playerImg.src = 'assets/a.png';
-
-const bulletImg = new Image();
-bulletImg.src = 'assets/b.png';
-
-const monsterMoveImages = [
-    new Image(),
-    new Image(),
-    new Image(),
-];
-monsterMoveImages[0].src = 'assets/move_0.png';
-monsterMoveImages[1].src = 'assets/move_1.png';
-monsterMoveImages[2].src = 'assets/move_2.png';
 
 // 游戏变量
 const groundHeight = 100;
@@ -69,14 +53,8 @@ class Bullet {
     }
 
     draw() {
-        ctx.save();
-        if (this.direction === 'left') {
-            ctx.scale(-1, 1);
-            ctx.drawImage(bulletImg, -this.x - this.width, this.y, this.width, this.height);
-        } else {
-            ctx.drawImage(bulletImg, this.x, this.y, this.width, this.height);
-        }
-        ctx.restore();
+        ctx.fillStyle = '#ffffff';  // 白色子弹
+        ctx.fillRect(this.x, this.y, this.width, this.height);  // 绘制子弹为矩形
     }
 }
 
@@ -95,7 +73,6 @@ class Monster {
     }
 
     update() {
-        this.animationFrame = (this.animationFrame + 1) % 3;
         if (this.movingLeft) {
             this.x -= this.speed;
             if (this.x <= 50) {
@@ -110,7 +87,8 @@ class Monster {
     }
 
     draw() {
-        ctx.drawImage(monsterMoveImages[this.animationFrame], this.x, this.y, this.width, this.height);
+        ctx.fillStyle = '#ff0000';  // 红色怪物
+        ctx.fillRect(this.x, this.y, this.width, this.height);  // 绘制怪物为红色矩形
         this.drawHealthBar();
     }
 
@@ -120,10 +98,10 @@ class Monster {
         const healthBarHeight = 5;
         const healthRatio = this.health / this.maxHealth;
 
-        ctx.fillStyle = '#ff0000'; // 红色表示未损失的血量
+        ctx.fillStyle = '#ff0000'; // 红色血条背景
         ctx.fillRect(this.x, this.y - 10, healthBarWidth, healthBarHeight);
 
-        ctx.fillStyle = '#00ff00'; // 绿色表示当前剩余的血量
+        ctx.fillStyle = '#00ff00'; // 绿色血量
         ctx.fillRect(this.x, this.y - 10, healthBarWidth * healthRatio, healthBarHeight);
     }
 
@@ -198,14 +176,8 @@ function movePlayer() {
 
 // 绘制玩家
 function drawPlayer() {
-    ctx.save();
-    if (!player.facingRight) {
-        ctx.scale(-1, 1);
-        ctx.drawImage(playerImg, -player.x - player.width, player.y, player.width, player.height);
-    } else {
-        ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-    }
-    ctx.restore();
+    ctx.fillStyle = '#00ff00';  // 绿色玩家
+    ctx.fillRect(player.x, player.y, player.width, player.height);  // 绘制玩家为绿色矩形
 }
 
 // 检测子弹是否击中怪物
@@ -290,7 +262,7 @@ function keyUp(e) {
 
 // 绘制平台
 function drawPlatform() {
-    ctx.fillStyle = '#654321'; // 平台颜色
+    ctx.fillStyle = '#654321'; // 棕色平台
     ctx.fillRect(0, platformY, canvas.width, groundHeight); // 绘制平台
 }
 
