@@ -1,5 +1,4 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+// game.js
 
 // 游戏参数
 const playerWidth = 100;
@@ -7,13 +6,13 @@ const playerHeight = 100;
 const bulletSize = 30;
 const monsterWidth = 22;
 const monsterHeight = 37;
-const bigMonsterWidth = 44; // 大怪物宽度
-const bigMonsterHeight = 74; // 大怪物高度
+const bigMonsterWidth = 44; // 大怪物的宽度
+const bigMonsterHeight = 74; // 大怪物的高度
 const platformY = 640; // 平台高度
 const gravity = 0.5; // 重力加速度
 const jumpStrength = -12; // 跳跃力量
 const monsterRespawnTime = 5000; // 怪物重生时间（毫秒）
-const maxMonsters = 15; // 最大怪物数量
+const maxMonsters = 5; // 最大怪物数量
 const playerHealth = 100; // 玩家血量
 const experienceForLevelUp = 100; // 升级所需经验
 
@@ -23,7 +22,7 @@ const player = {
     y: platformY - playerHeight,
     width: playerWidth,
     height: playerHeight,
-    speed: 7, // 增加速度
+    speed: 7,
     vx: 0,
     vy: 0,
     jumping: false,
@@ -46,7 +45,7 @@ const monsterImages = {
     stand: [],
     hit: [],
     die: [],
-    big: [] // 大怪物图像
+    big: [] // 大怪物的图像
 };
 
 // 背景
@@ -57,56 +56,50 @@ const backgroundMusic = new Audio('assets/sheshoucun.mp3'); // 确保音乐文�
 
 // 加载所有资源
 function loadImages() {
-    // 玩家图片
-    player.image.src = 'assets/a.png'; 
-
-    // 子弹图片
-    bulletImage.src = 'assets/b.png';
-
-    // 背景图片
-    background.src = 'assets/bp.png';
+    player.image.src = 'assets/a.png'; // 玩家图片
+    bulletImage.src = 'assets/b.png'; // 子弹图片
+    background.src = 'assets/bp.png'; // 背景图片
 
     // 加载怪物图像
     ['move_0.png', 'move_1.png', 'move_2.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.move.push(img);
     });
     ['stand_0.png', 'stand_1.png', 'stand_2.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.stand.push(img);
     });
     ['hit1_0.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.hit.push(img);
     });
     ['die1_0.png', 'die1_1.png', 'die1_2.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.die.push(img);
     });
-
-    // 大怪物图像（使用相同的图片，但体积调整）
+    // 加载大怪物图像（使用同样的图像，只是放大）
     ['move_0.png', 'move_1.png', 'move_2.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.big.push(img);
     });
     ['stand_0.png', 'stand_1.png', 'stand_2.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.big.push(img);
     });
     ['hit1_0.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.big.push(img);
     });
     ['die1_0.png', 'die1_1.png', 'die1_2.png'].forEach(src => {
         const img = new Image();
-        img.src = 'assets/' + src;
+        img.src = `assets/${src}`;
         monsterImages.big.push(img);
     });
 }
@@ -161,16 +154,17 @@ function drawPlayer() {
     ctx.fillStyle = 'yellow';
     ctx.fillRect(player.x, player.y - 25, (player.width * player.experience) / experienceForLevelUp, 10);
 
-    // 绘制等级数字
+    // 绘制等级
     ctx.fillStyle = 'white';
-    ctx.font = '20px Arial';
-    ctx.fillText(`Level: ${player.level}`, player.x, player.y - 40);
+    ctx.font = '16px Arial';
+    ctx.fillText('Level: ' + player.level, player.x, player.y - 40);
 }
 
 // 绘制怪物
 function drawMonsters() {
     monsters.forEach(monster => {
         if (!monster.dead) {
+            console.log("Drawing monster at", monster.x, monster.y);
             const stateImages = monster.images[monster.currentState];
             const image = stateImages[monster.frameIndex];
             ctx.drawImage(image, monster.x, monster.y, monster.width, monster.height); // 保持原始尺寸
@@ -234,54 +228,48 @@ function updateMonsters() {
                     bullet.y < monster.y + monster.height &&
                     bullet.y + bulletSize > monster.y
                 ) {
-                    monster.currentState = 'die';
-                    monster.frameIndex = 0;
-                    monster.dead = true;
-                    monster.deathTime = Date.now();
-                    bullets.splice(bullets.indexOf(bullet), 1); // 移除子弹
-                    player.experience += 10; // 获得经验
-                    if (player.experience >= experienceForLevelUp) {
-                        player.experience = 0; // 升级后清空经验
-                        player.level += 1;
-                        // 处理升级逻辑，例如召唤大怪物
-                        if (player.level % 5 === 0) {
-                            createBigMonster();
-                        }
-                    }
+                    monster.health -= 10; // 假设子弹对怪物造成10点伤害
+                    bullet.x = -100; // 将子弹移出画布
                 }
             });
-        }
-    });
 
-    // 处理怪物死亡后的时间
-    monsters.forEach(monster => {
-        if (monster.dead && Date.now() - monster.deathTime > 1000) {
-            monsters.splice(monsters.indexOf(monster), 1);
-            if (monsters.length < maxMonsters) {
-                createMonster();
+            // 检查怪物是否死亡
+            if (monster.health <= 0) {
+                monster.dead = true;
+                monster.deathTime = Date.now();
+                if (monster.width === monsterWidth) {
+                    createBigMonster(); // 创建一个大怪物
+                }
             }
         }
     });
+
+    // 清除死亡怪物
+    monsters = monsters.filter(monster => !monster.dead || Date.now() - monster.deathTime < 1000);
 }
 
 // 更新子弹位置
 function updateBullets() {
     bullets.forEach(bullet => {
-        bullet.y -= 10;
+        bullet.y -= 5; // 子弹速度
         if (bullet.y < 0) {
-            bullets.splice(bullets.indexOf(bullet), 1);
+            bullet.x = -100; // 将子弹移出画布
         }
     });
+
+    // 清除超出画布的子弹
+    bullets = bullets.filter(bullet => bullet.y >= 0);
 }
 
 // 创建怪物
 function createMonster() {
+    console.log("Creating monster");
     const monster = {
         x: Math.random() * (canvas.width - monsterWidth),
         y: platformY - monsterHeight,
         width: monsterWidth,
         height: monsterHeight,
-        vx: Math.random() * 2 - 1, // 随机方向
+        vx: Math.random() * 2 - 1,
         vy: 0,
         images: {
             move: monsterImages.move,
@@ -298,10 +286,12 @@ function createMonster() {
         deathTime: 0
     };
     monsters.push(monster);
+    console.log("Monster created at", monster.x, monster.y);
 }
 
 // 创建大怪物
 function createBigMonster() {
+    console.log("Creating big monster");
     const bigMonster = {
         x: Math.random() * (canvas.width - bigMonsterWidth),
         y: platformY - bigMonsterHeight,
@@ -324,12 +314,52 @@ function createBigMonster() {
         deathTime: 0
     };
     monsters.push(bigMonster);
+    console.log("Big monster created at", bigMonster.x, bigMonster.y);
 }
 
-// 初始化
+// 添加怪物
+function spawnMonsters() {
+    if (monsters.length < maxMonsters) {
+        createMonster();
+    }
+}
+
+// 处理键盘输入
+function handleKeyDown(event) {
+    switch (event.key) {
+        case 'ArrowLeft':
+            player.vx = -player.speed;
+            player.facingRight = false;
+            break;
+        case 'ArrowRight':
+            player.vx = player.speed;
+            player.facingRight = true;
+            break;
+        case ' ':
+            if (!player.jumping) {
+                player.vy = jumpStrength;
+                player.jumping = true;
+            }
+            break;
+    }
+}
+
+function handleKeyUp(event) {
+    switch (event.key) {
+        case 'ArrowLeft':
+        case 'ArrowRight':
+            player.vx = 0;
+            break;
+    }
+}
+
+// 初始化游戏
 function init() {
     loadImages();
     playBackgroundMusic();
+    setInterval(spawnMonsters, monsterRespawnTime);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
     gameLoop();
 }
 

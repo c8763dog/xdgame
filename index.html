@@ -9,14 +9,29 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
+            background-color: #000; /* 背景色设置为黑色 */
         }
         canvas {
             display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script src="game.js"></script>
+    <script>
+        // 初始化画布
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置画布大小
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // 确保游戏脚本可以访问画布上下文
+        window.ctx = ctx;
+        window.canvas = canvas;
+    </script>
 </body>
 </html>
