@@ -203,14 +203,14 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// 事件监听
-document.addEventListener('keydown', keyDown);
-document.addEventListener('keyup', keyUp);
-
 // 初始化敌人
 function initEnemies() {
     enemies.push(new Enemy(canvas.width + 200, platformY - 50)); // 生成白色敌人
 }
+
+// 事件监听
+document.addEventListener('keydown', keyDown);
+document.addEventListener('keyup', keyUp);
 
 // 开始游戏
 initEnemies();
